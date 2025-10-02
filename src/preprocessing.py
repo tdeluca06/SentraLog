@@ -90,10 +90,6 @@ def process_logs(logs: list[str]) -> list[Schema]:
             processed.append(processed_log)
     return processed
 
-def print_schema(schema: Schema):
-    for key, val in schema.items():
-        print("{} : {}".format(key, val))
-
 def print_list(schemas: list[Schema]):
     """
     Debugging function to clean output of the list of schemas for
@@ -104,10 +100,11 @@ def print_list(schemas: list[Schema]):
     """
     for i, schema in enumerate(schemas):
         print(f"Entry #{i + 1}")
-        print_schema(schema)
+        for key, val in schema.items():
+            print("{} : {}".format(key, val))
         print("======================================================")
 
-path: str = "../data/access.log"
+path: str = "../data/data.log"
 test_logs: list[str] = load_data(fp=path)
 output: list[Schema] = process_logs(logs=test_logs)
 print_list(output)
