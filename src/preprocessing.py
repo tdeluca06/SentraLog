@@ -1,5 +1,6 @@
 from datetime import datetime
-from typing import TypedDict, Pattern
+from typing import Pattern, AnyStr
+from util.schema import Schema
 import re
 
 LOG_PATTERN: Pattern[str] = re.compile(
@@ -7,17 +8,6 @@ LOG_PATTERN: Pattern[str] = re.compile(
     r'"(?P<request>[^"]*)" (?P<status>\d{3}) (?P<body_bytes_sent>\S+) '
     r'"(?P<http_referer>[^"]*)" "(?P<http_user_agent>[^"]*)"'
 )
-
-class Schema(TypedDict):
-    remote_addr: str
-    remote_user: str | None
-    time_local: str             # maybe not needed
-    timestamp: str              # time_local as ISO8601 str
-    request: str
-    status: int
-    body_bytes_sent: int | None
-    http_referer: str | None
-    http_user_agent: str | None
 
 def load_data(fp: str) -> list[str]:
     """
@@ -52,27 +42,27 @@ def build_schema(log: str) -> Schema | None:
     :return: a schema of the line
     """
     if not log.strip():
-        print("Empty line encountered - skipping")
-        return None
+        print("Empty line encountered, skipping")
+        return None # may wanna change this
 
     match = LOG_PATTERN.match(log)
     if not match:
         raise ValueError(f"Could not parse log line: {log}")
-    d = match.groupdict()
+    log_dict: dict[str, AnyStr] = match.groupdict()
 
-    dt = datetime.strptime(d["time_local"], "%d/%b/%Y:%H:%M:%S %z")
+    dt = datetime.strptime(log_dict["time_local"], "%d/%b/%Y:%H:%M:%S %z")
     iso_ts = dt.isoformat()
 
     return Schema(
-        remote_addr=d["remote_addr"],
-        remote_user=None if d["remote_user"] == "-" else d["remote_user"],
-        time_local=d["time_local"],
+        remote_addr=log_dict["remote_addr"],
+        remote_user=None if log_dict["remote_user"] == "-" else log_dict["remote_user"],
+        time_local=log_dict["time_local"],
         timestamp=iso_ts,
-        request=d["request"],
-        status=int(d["status"]),
-        body_bytes_sent=None if d["body_bytes_sent"] == "-" else int(d["body_bytes_sent"]),
-        http_referer=None if d["http_referer"] == "-" else d["http_referer"],
-        http_user_agent=None if d["http_user_agent"] == "-" else d["http_user_agent"]
+        request=log_dict["request"],
+        status=int(log_dict["status"]),
+        body_bytes_sent=None if log_dict["body_bytes_sent"] == "-" else int(log_dict["body_bytes_sent"]),
+        http_referer=None if log_dict["http_referer"] == "-" else log_dict["http_referer"],
+        http_user_agent=None if log_dict["http_user_agent"] == "-" else log_dict["http_user_agent"]
     )
 
 def process_logs(logs: list[str]) -> list[Schema]:
@@ -90,13 +80,32 @@ def process_logs(logs: list[str]) -> list[Schema]:
             processed.append(processed_log)
     return processed
 
-def print_list(schemas: list[Schema]):
+def group_by_user(logs: list[Schema]) -> dict[str, list[Schema]] | None:
+    """
+    Function to map each user to a list of their associated logs by
+    mapping each remote_addr to a list of all logs containing that
+    remote_addr. If the input is empty, the function will return none.
+    :param logs: the list of Schemas to be grouped by remote_addr
+    :return: dict[remote_addr : list of associated logs] or None
+    """
+    if not logs:
+        return None
+
+    grouped: dict[str, list[Schema]] = {}
+    for log in logs:
+        remote_addr: str = log['remote_addr']
+        if remote_addr not in grouped:
+            grouped[remote_addr] = []
+        grouped[remote_addr].append(log)
+
+    return grouped
+
+def print_list(schemas: list[Schema]) -> None:
     """
     Debugging function to clean output of the list of schemas for
     visual inspection. Prints which log it is interpreting based on
     line number in the given file.
-    :param schemas:
-    :return:
+    :param schemas: list of schemas to be printed
     """
     for i, schema in enumerate(schemas):
         print(f"Entry #{i + 1}")
@@ -104,7 +113,28 @@ def print_list(schemas: list[Schema]):
             print("{} : {}".format(key, val))
         print("======================================================")
 
-path: str = "../data/data.log"
-test_logs: list[str] = load_data(fp=path)
-output: list[Schema] = process_logs(logs=test_logs)
-print_list(output)
+def print_output(users: dict[str, list[Schema]]) -> None:
+    """
+    Debugging function to clean the output of the grouped dictionary
+    of schemas. Prints which user it is interpreting based on the value
+    of the current remote_addr.
+    :param users: grouped dict to be printed
+    """
+    for i, (remote_addr, logs) in enumerate(users.items()):
+        print(f"Entry #{i}")
+        print(f"User: {remote_addr}")
+        for log in logs:
+            print(log)
+        print("======================================================")
+
+def preprocess() -> dict[str, list[Schema]]:
+    path: str = "../data/access.log"
+    logs: list[str] = load_data(fp=path)
+    processed: list[Schema] = process_logs(logs=logs)
+    grouped: dict[str, list[Schema]] = group_by_user(processed)
+    return grouped
+
+if __name__ == '__main__':
+    output: dict[str, list[Schema]] = preprocess()
+    print_output(output)
+
