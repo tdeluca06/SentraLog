@@ -1,5 +1,6 @@
 from typing import TypedDict
 
+
 class Schema(TypedDict):
     """
     Normalized NGINX access log entry.
@@ -33,6 +34,7 @@ class Schema(TypedDict):
     body_bytes_sent: int | None
     http_referer: str | None
     http_user_agent: str | None
+
 
 class DetectionResult(TypedDict):
     """

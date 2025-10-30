@@ -1,13 +1,16 @@
+import re
+
 from datetime import datetime
 from typing import Pattern, AnyStr
 from util.schema import Schema
-import re
+
 
 LOG_PATTERN: Pattern[str] = re.compile(
     r'(?P<remote_addr>\S+) \S+ (?P<remote_user>\S+) \[(?P<time_local>[^\]]+)\] '
     r'"(?P<request>[^"]*)" (?P<status>\d{3}) (?P<body_bytes_sent>\S+) '
     r'"(?P<http_referer>[^"]*)" "(?P<http_user_agent>[^"]*)"'
 )
+
 
 def load_data(fp: str) -> list[str]:
     """
@@ -21,6 +24,7 @@ def load_data(fp: str) -> list[str]:
     with open(file=fp, mode='r', encoding='utf-8') as f:
         lines : list[str] = f.readlines()
         return lines
+
 
 def build_schema(log: str) -> Schema | None:
     """
@@ -65,6 +69,7 @@ def build_schema(log: str) -> Schema | None:
         http_user_agent=None if log_dict["http_user_agent"] == "-" else log_dict["http_user_agent"]
     )
 
+
 def process_logs(logs: list[str]) -> list[Schema]:
     """
     Function to accumulate the processed schemas into a list of schemas.
@@ -79,6 +84,7 @@ def process_logs(logs: list[str]) -> list[Schema]:
         if processed_log is not None:
             processed.append(processed_log)
     return processed
+
 
 def group_by_user(logs: list[Schema]) -> dict[str, list[Schema]] | None:
     """
@@ -100,6 +106,7 @@ def group_by_user(logs: list[Schema]) -> dict[str, list[Schema]] | None:
 
     return grouped
 
+
 def print_list(schemas: list[Schema]) -> None:
     """
     Debugging function to clean output of the list of schemas for
@@ -112,6 +119,7 @@ def print_list(schemas: list[Schema]) -> None:
         for key, val in schema.items():
             print("{} : {}".format(key, val))
         print("======================================================")
+
 
 def print_output(users: dict[str, list[Schema]]) -> None:
     """
@@ -127,12 +135,14 @@ def print_output(users: dict[str, list[Schema]]) -> None:
             print(log)
         print("======================================================")
 
+
 def preprocess() -> dict[str, list[Schema]]:
     path: str = "../data/access.log"
     logs: list[str] = load_data(fp=path)
     processed: list[Schema] = process_logs(logs=logs)
     grouped: dict[str, list[Schema]] = group_by_user(processed)
     return grouped
+
 
 if __name__ == '__main__':
     output: dict[str, list[Schema]] = preprocess()

@@ -4,6 +4,7 @@ from util.schema import Schema, DetectionResult
 from preprocessing import preprocess
 from detectors import Detector
 
+
 class ThreatDetector:
     """
     Orchestrates a set of detectors over grouped NGINX common access logs.
@@ -35,6 +36,7 @@ class ThreatDetector:
             self.results.append(matches)
 
         return self.results
+
 
 if __name__ == "__main__":
     data: dict[str, list[Schema]] = preprocess()

@@ -3,6 +3,7 @@ from typing import Protocol, ClassVar
 
 from util.schema import Schema, DetectionResult
 
+
 KEYWORDS: tuple = (
     "SELECT",
     "FROM",
@@ -43,6 +44,7 @@ class Detector(Protocol):
         :return: a new DetectionResult with attempt details
         """
         ...
+
 
 @dataclass()
 class BruteForceDetector:
@@ -116,6 +118,7 @@ class SQLiDetector:
             "freq": freq,
             "matches": matches
         }
+
 
 @dataclass()
 class ScanDetector:
