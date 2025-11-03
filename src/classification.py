@@ -1,5 +1,3 @@
-import pprint
-
 from util.schema import DetectionResult, Severity
 
 THRESHOLDS = {
