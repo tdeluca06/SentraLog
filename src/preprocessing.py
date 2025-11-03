@@ -6,7 +6,7 @@ from util.schema import Schema
 
 
 LOG_PATTERN: Pattern[str] = re.compile(
-    r'(?P<remote_addr>\S+) \S+ (?P<remote_user>\S+) \[(?P<time_local>[^\]]+)\] '
+    r"(?P<remote_addr>\S+) \S+ (?P<remote_user>\S+) \[(?P<time_local>[^\]]+)\] "
     r'"(?P<request>[^"]*)" (?P<status>\d{3}) (?P<body_bytes_sent>\S+) '
     r'"(?P<http_referer>[^"]*)" "(?P<http_user_agent>[^"]*)"'
 )
@@ -21,8 +21,8 @@ def load_data(fp: str) -> list[str]:
     if fp is None:
         raise FileNotFoundError("Couldn't resolve filepath input to preprocessor")
 
-    with open(file=fp, mode='r', encoding='utf-8') as f:
-        lines : list[str] = f.readlines()
+    with open(file=fp, mode="r", encoding="utf-8") as f:
+        lines: list[str] = f.readlines()
         return lines
 
 
@@ -47,7 +47,7 @@ def build_schema(log: str) -> Schema | None:
     """
     if not log.strip():
         print("Empty line encountered, skipping")
-        return None # may wanna change this
+        return None  # may wanna change this
 
     match = LOG_PATTERN.match(log)
     if not match:
@@ -64,9 +64,17 @@ def build_schema(log: str) -> Schema | None:
         timestamp=iso_ts,
         request=log_dict["request"],
         status=int(log_dict["status"]),
-        body_bytes_sent=None if log_dict["body_bytes_sent"] == "-" else int(log_dict["body_bytes_sent"]),
-        http_referer=None if log_dict["http_referer"] == "-" else log_dict["http_referer"],
-        http_user_agent=None if log_dict["http_user_agent"] == "-" else log_dict["http_user_agent"]
+        body_bytes_sent=(
+            None
+            if log_dict["body_bytes_sent"] == "-"
+            else int(log_dict["body_bytes_sent"])
+        ),
+        http_referer=(
+            None if log_dict["http_referer"] == "-" else log_dict["http_referer"]
+        ),
+        http_user_agent=(
+            None if log_dict["http_user_agent"] == "-" else log_dict["http_user_agent"]
+        ),
     )
 
 
@@ -99,7 +107,7 @@ def group_by_user(logs: list[Schema]) -> dict[str, list[Schema]] | None:
 
     grouped: dict[str, list[Schema]] = {}
     for log in logs:
-        remote_addr: str = log['remote_addr']
+        remote_addr: str = log["remote_addr"]
         if remote_addr not in grouped:
             grouped[remote_addr] = []
         grouped[remote_addr].append(log)
@@ -144,7 +152,6 @@ def preprocess() -> dict[str, list[Schema]]:
     return grouped
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     output: dict[str, list[Schema]] = preprocess()
     print_output(output)
-

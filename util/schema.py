@@ -1,3 +1,4 @@
+from enum import IntEnum
 from typing import TypedDict
 
 
@@ -25,15 +26,28 @@ class Schema(TypedDict):
         - http_user_agent: str | None
             User agent header if provided.
     """
+
     remote_addr: str
     remote_user: str | None
     time_local: str
-    timestamp: str              # time_local as ISO8601 str
+    timestamp: str  # time_local as ISO8601 str
     request: str
     status: int
     body_bytes_sent: int | None
     http_referer: str | None
     http_user_agent: str | None
+
+
+class Severity(IntEnum):
+    """
+    A class to define severity types using IntEnum. IntEnum is used for natural behavior
+    during serialization. Mapped to integers -1, 0, 1 in order to treat labels as ordinal
+    for future ML compatibility.
+    """
+
+    LOW = -1
+    MEDIUM = 0
+    HIGH = 1
 
 
 class DetectionResult(TypedDict):
@@ -47,7 +61,11 @@ class DetectionResult(TypedDict):
             Frequency of the malicious log.
         - matches: list
             Violating logs to be reported.
+        - severity: Severity
+            Severity of the detection represented as an IntEnum. Defaults to LOW.
     """
+
     name: str
     freq: int
     matches: list[Schema]
+    severity: Severity

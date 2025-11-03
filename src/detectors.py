@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 from typing import Protocol, ClassVar
 
-from util.schema import Schema, DetectionResult
-
+from util.schema import Schema, DetectionResult, Severity
 
 KEYWORDS: tuple = (
     "SELECT",
@@ -14,17 +13,13 @@ KEYWORDS: tuple = (
     "UPDATE",
     "TABLE",
     "JOIN",
-    "UNION"
+    "UNION",
 )
 
-SCAN_PATTERNS: tuple = (
-    "Nmap",
-    "dirb"
-)
+SCAN_PATTERNS: tuple = ("Nmap", "dirb")
 
-LOGIN_REQUESTS: tuple = (
-    "POST",
-)
+LOGIN_REQUESTS: tuple = ("POST",)
+
 
 @dataclass()
 class Detector(Protocol):
@@ -35,6 +30,7 @@ class Detector(Protocol):
     which accepts a dictionary with remote_addr as key and a list of
     Schemas (processed logs) as value.
     """
+
     name: ClassVar[str]
 
     def detect(self, logs: dict[str, list[Schema]]) -> DetectionResult:
@@ -54,6 +50,7 @@ class BruteForceDetector:
     the details. If the amount of failed logins are greater than a given threshold,
     which defaults to 5, a brute force attempt is detected.
     """
+
     name: str = "brute_force"
 
     def detect(self, logs: dict[str, list[Schema]], *, threshold=5) -> DetectionResult:
@@ -73,7 +70,9 @@ class BruteForceDetector:
         entries: list = []
         for remote_addr, data in logs.items():
             for log in data:
-                if log['status'] != 200 and any(REQ in log['request'] for REQ in LOGIN_REQUESTS):
+                if log["status"] != 200 and any(
+                    REQ in log["request"] for REQ in LOGIN_REQUESTS
+                ):
                     entries.append(log)
                     tracker[remote_addr] = entries
                     if len(tracker) > threshold:
@@ -84,7 +83,8 @@ class BruteForceDetector:
         return {
             "name": self.name,
             "freq": freq,
-            "matches": matches
+            "matches": matches,
+            "severity": Severity.LOW,
         }
 
 
@@ -95,6 +95,7 @@ class SQLiDetector:
     given request for SQL keywords. If a SQL keyword is found in a request,
     the log containing it is detected.
     """
+
     name: str = "sql_injection"
 
     def detect(self, logs: dict[str, list[Schema]]) -> DetectionResult:
@@ -109,14 +110,15 @@ class SQLiDetector:
         freq: int = 0
         for remote_addr, data in logs.items():
             for entry in data:
-                if any(KEYWORD in entry['request'] for KEYWORD in KEYWORDS):
+                if any(KEYWORD in entry["request"] for KEYWORD in KEYWORDS):
                     freq += 1
                     matches.append(entry)
 
         return {
             "name": self.name,
             "freq": freq,
-            "matches": matches
+            "matches": matches,
+            "severity": Severity.LOW,
         }
 
 
@@ -128,6 +130,7 @@ class ScanDetector:
     as Nmap compatibility or dirb directory scans. If a scanning pattern
     is found, the log containing it will be detected.
     """
+
     name: str = "scan_pattern"
 
     def detect(self, logs: dict[str, list[Schema]]) -> DetectionResult:
@@ -143,12 +146,15 @@ class ScanDetector:
         freq: int = 0
         for remote_adr, data in logs.items():
             for entry in data:
-                if any(KEYWORD in entry['http_user_agent'] for KEYWORD in SCAN_PATTERNS):
+                if any(
+                    KEYWORD in entry["http_user_agent"] for KEYWORD in SCAN_PATTERNS
+                ):
                     freq += 1
                     detected.append(entry)
 
         return {
-            'name': self.name,
-            'freq': freq,
-            'matches': detected
+            "name": self.name,
+            "freq": freq,
+            "matches": detected,
+            "severity": Severity.LOW,
         }
