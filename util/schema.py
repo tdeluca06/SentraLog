@@ -1,5 +1,17 @@
 from enum import IntEnum
-from typing import TypedDict
+from typing import TypedDict, Required, Optional
+
+
+class Severity(IntEnum):
+    """
+    A class to define severity types using IntEnum. IntEnum is used for natural behavior
+    during serialization. Mapped to integers -1, 0, 1 in order to treat labels as ordinal
+    for future ML compatibility.
+    """
+
+    LOW = -1
+    MEDIUM = 0
+    HIGH = 1
 
 
 class Schema(TypedDict):
@@ -27,27 +39,15 @@ class Schema(TypedDict):
             User agent header if provided.
     """
 
-    remote_addr: str
-    remote_user: str | None
-    time_local: str
-    timestamp: str  # time_local as ISO8601 str
-    request: str
-    status: int
-    body_bytes_sent: int | None
-    http_referer: str | None
-    http_user_agent: str | None
-
-
-class Severity(IntEnum):
-    """
-    A class to define severity types using IntEnum. IntEnum is used for natural behavior
-    during serialization. Mapped to integers -1, 0, 1 in order to treat labels as ordinal
-    for future ML compatibility.
-    """
-
-    LOW = -1
-    MEDIUM = 0
-    HIGH = 1
+    remote_addr: Required[str]
+    remote_user: Optional[str]
+    time_local: Required[str]
+    timestamp: Required[str]          # time_local as ISO8601 str
+    request: Required[str]
+    status: Required[int]
+    body_bytes_sent: Optional[int]
+    http_referer: Optional[str]
+    http_user_agent: Optional[str]
 
 
 class DetectionResult(TypedDict):
@@ -65,7 +65,7 @@ class DetectionResult(TypedDict):
             Severity of the detection represented as an IntEnum. Defaults to LOW.
     """
 
-    name: str
-    freq: int
-    matches: list[Schema]
-    severity: Severity
+    name: Required[str]
+    freq: Required[int]
+    matches: Required[list[Schema]]
+    severity: Required[Severity]
